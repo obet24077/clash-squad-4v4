@@ -12,7 +12,7 @@
     "dev:all:nowatch": "node scripts/dev-all.mjs --no-watch",
     "dev:alt": "node scripts/vite-alt.mjs",
     "status": "node scripts/dev-all.mjs --status",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "build:prod": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -22,7 +22,7 @@
     "assets:ogg": "node scripts/pbx.mjs sound convert && node scripts/pbx.mjs sound verify",
     "assets:snapshot": "node scripts/pbx.mjs snapshot",
     "assets:verify": "node scripts/pbx.mjs verify assets",
-	"download": "node scripts/assets.mjs",
+    "download": "node scripts/assets.mjs",
     "pbx": "node scripts/pbx.mjs",
     "install:all": "npm i && npm i --prefix server",
     "clean:all": "node -e \"const fs=require('fs');for(const p of ['node_modules','package-lock.json','server/node_modules','server/package-lock.json']){fs.rmSync(p,{recursive:true,force:true});console.log('removed: '+p)}\""
