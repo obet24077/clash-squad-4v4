@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Custom HUD HP</title>
+  <style>
+    *{box-sizing:border-box;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;color:#fff;background:radial-gradient(circle at 50% 45%,rgba(14,42,71,.85),rgba(4,8,15,.98)),repeating-linear-gradient(0deg,rgba(56,189,248,.07) 0 1px,transparent 1px 36px),repeating-linear-gradient(90deg,rgba(56,189,248,.07) 0 1px,transparent 1px 36px)}
+    .vkm-root{--vkm-o:.85;--vkm-l:max(16px,env(safe-area-inset-left));--vkm-r:max(16px,env(safe-area-inset-right));--vkm-t:max(10px,env(safe-area-inset-top));--vkm-b:max(12px,env(safe-area-inset-bottom));position:fixed;inset:0;overflow:hidden}
+    .crosshair-guide{position:fixed;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-50%);pointer-events:none;opacity:.4}
+    .crosshair-guide::before,.crosshair-guide::after{content:"";position:absolute;background:#38bdf8}
+    .crosshair-guide::before{left:11px;top:0;width:2px;height:24px}
+    .crosshair-guide::after{top:11px;left:0;width:24px;height:2px}
+    .vkm-custom-panel{position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:99999;width:min(92vw,450px);background:rgba(9,16,28,.96);border:1.5px solid #38bdf8;border-radius:12px;padding:8px 12px;color:#e2e8f0;font:600 11px/1.3 system-ui,sans-serif;box-shadow:0 12px 34px rgba(0,0,0,.85);display:flex;flex-direction:column;gap:6px}
+    .vkm-custom-row{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+    .vkm-custom-panel button{border:1px solid rgba(148,163,184,.45);background:#1e293b;color:#f8fafc;border-radius:7px;padding:6px 9px;font:700 11px/1 system-ui,sans-serif;cursor:pointer}
+    .vkm-custom-panel button.vkm-save{background:#0284c7;border-color:#38bdf8}
+    .vkm-custom-panel button.vkm-back{background:#334155}
+    .vkm-btn{position:fixed;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;margin:0;color:#e8f7ff;font:800 11px/1 system-ui,sans-serif;background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,0) 45%),rgba(10,16,28,.65);border:1.5px solid rgba(255,255,255,.24);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.35);opacity:var(--vkm-o);touch-action:none;cursor:grab;overflow:hidden}
+    .vkm-btn svg{width:54%!important;height:54%!important;max-width:34px!important;max-height:34px!important;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;display:block}
+    .vkm-num{border-radius:10px}
+    .vkm-badge{position:absolute;left:4px;top:2px;font-size:8px;font-weight:800;line-height:1;opacity:.85;pointer-events:none}
+    .vkm-round{border-radius:50%!important}
+    .vkm-fire{border:2.5px solid rgba(255,215,70,.78)!important;background:rgba(255,255,255,.06)!important}
+    .vkm-fire .vkm-fire-knob{position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,230,120,.45),rgba(255,175,30,.25));border:1.5px solid rgba(255,235,150,.85);display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .vkm-gloowall{border:2px solid rgba(88,199,255,.8)!important;background:radial-gradient(circle at 35% 35%,rgba(88,199,255,.34),rgba(22,104,184,.28))!important;gap:1px}
+    .vkm-gw-ring{position:absolute;inset:-2px;border-radius:50%;padding:2px;background:conic-gradient(#38bdf8 270deg,rgba(15,23,42,.55) 270deg);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .vkm-ghost{position:fixed;border-radius:50%;border:2px solid rgba(255,255,255,.28);background:radial-gradient(circle at 50% 50%,rgba(34,211,238,.12),rgba(10,16,28,.48) 70%);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
+    .vkm-stick{width:48px;height:48px;border-radius:50%;border:2px solid rgba(255,255,255,.65);background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45),rgba(34,211,238,.28));pointer-events:none}
+    [data-vkm-id]{outline:1.5px dashed rgba(125,211,252,.85)}
+    [data-vkm-id].vkm-selected{outline:2.5px solid #fde047!important;box-shadow:0 0 18px rgba(253,224,71,.85)!important;z-index:99990!important}
+    .toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#0284c7;color:#fff;padding:8px 16px;border-radius:999px;font:700 12px/1 system-ui,sans-serif;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999999}
+    .toast.show{opacity:1}
+    #pb-fs-gate{position:fixed;inset:0;z-index:2147483647;background:rgba(2,6,23,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+    #pb-fs-gate.hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <div class="vkm-root" id="vkmRoot">
+    <div class="crosshair-guide"></div>
+    <div class="vkm-custom-panel">
+      <div class="vkm-custom-row">
+        <span style="color:#38bdf8;font-weight:800">CUSTOM HUD HP — <span id="selName" style="color:#fde047">Analog</span></span>
+        <div style="display:flex;gap:5px">
+          <button type="button" id="btnResetOne">Reset</button>
+          <button type="button" id="btnResetAll">Reset Semua</button>
+          <button type="button" id="btnSave" class="vkm-save">Simpan</button>
+          <button type="button" id="btnBack" class="vkm-back">Kembali</button>
+        </div>
+      </div>
+      <div class="vkm-custom-row">
+        <label style="display:flex;align-items:center;gap:6px;flex:1;min-width:155px">Ukuran
+          <input type="range" id="inpScale" min="0.6" max="1.5" step="0.05" value="1" style="flex:1">
+          <span id="valScale" style="min-width:34px;text-align:right">100%</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;flex:1;min-width:155px">Transparan
+          <input type="range" id="inpOp" min="0.25" max="1" step="0.05" value="0.85" style="flex:1">
+          <span id="valOp" style="min-width:34px;text-align:right">85%</span>
+        </label>
+      </div>
+      <div style="font-size:10px;color:#94a3b8">Geser (drag) tombol atau analog di layar untuk mengatur tata letak HUD HP.</div>
+    </div>
+    <div id="stage"></div>
+  </div>
+  <div id="toast" class="toast">Tata letak HUD tersimpan!</div>
+  <div id="pb-fs-gate">
+    <div id="pb-gate-title" style="font-size:19px;font-weight:800;color:#38bdf8;margin-bottom:8px">MODE LAYAR PENUH &amp; LANDSCAPE</div>
+    <div id="pb-gate-desc" style="font-size:13px;color:#cbd5e1;max-width:380px;margin-bottom:18px">Ketuk tombol di bawah untuk mengunci tampilan Fullscreen Landscape sebelum mengatur tata letak HUD.</div>
+    <button id="pb-force-fs-btn" type="button" style="padding:12px 22px;border-radius:10px;border:1px solid #38bdf8;background:#0284c7;color:#fff;font-weight:800;font-size:14px;cursor:pointer">Mulai Atur HUD (Fullscreen)</button>
+  </div>
+  <script>
+    const KEY="pb_mobile_hud_layout_v1";
+    const SVG={
+      jump:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M6 13l6-6 6 6M6 19l6-6 6 6"/></svg>',
+      crouch:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M6 5l6 6 6-6M6 11l6 6 6-6"/></svg>',
+      reload:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/></svg>',
+      fire:'<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>',
+      aim:'<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M7 12h10"/></svg>',
+      walk:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M8.5 3.5c1.8 0 2.8 1.8 2.8 3.8S10.3 11 8.5 11 5.7 9.3 5.7 7.3 6.7 3.5 8.5 3.5zM7 13.5h3.5V15a1.75 1.75 0 0 1-3.5 0zM15.5 10c1.8 0 2.8 1.8 2.8 3.8s-1 3.7-2.8 3.7-2.8-1.7-2.8-3.7 1-3.8 2.8-3.8zM14 19.5h3.5V21H14z"/></svg>',
+      action:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10M12 9.5a1.5 1.5 0 0 1 3 0V11M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.5a5.5 5.5 0 0 1-4.6-2.5L4.5 14.5a1.6 1.6 0 0 1 2.6-1.8L9 15"/></svg>',
+      swap:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M5 8h13l-3-3M19 16H6l3 3"/></svg>',
+      drop:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4v11M7.5 11l4.5 4.5L16.5 11M5 20h14"/></svg>',
+      laser:'<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><path d="M3 12h5M16 12h5M12 3v5M12 16v5"/></svg>',
+      weaponMenu:'<svg width="24" height="24" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>',
+      dual:'<svg width="24" height="24" viewBox="0 0 24 24"><rect x="3.5" y="7" width="7" height="10" rx="1.5"/><rect x="13.5" y="7" width="7" height="10" rx="1.5"/></svg>',
+      rifle:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M2 12.5h13l2-2h5v3h-6l-1.5 2H10l-1 3.5H6l1-3.5H2z"/></svg>',
+      pistol:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 8.5h14.5v4.5H12v6.5H8.5V13H4z"/></svg>',
+      knife:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 20L17.5 6.5 20 4l-.5 4.5L13 15l-3 .5L8 18z"/></svg>',
+      grenade:'<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="14.5" r="6"/><path d="M10 8.5V5h4.5M14.5 5l2.5 1.5"/></svg>',
+      special:'<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.7 5.7l2.8 2.8M15.5 15.5l2.8 2.8M18.3 5.7l-2.8 2.8M8.5 15.5l-2.8 2.8"/></svg>',
+      radioMenu:'<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>',
+      menu:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg>',
+      score:'<svg width="24" height="24" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M9.5 10v9"/></svg>',
+      chat:'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 5.5h16V16H9.5L5 19.5V16H4z"/></svg>',
+      glowal:'<span class="vkm-gw-ring"></span><svg width="24" height="18" viewBox="0 0 32 24" style="width:24px!important;height:18px!important;stroke:#aee8ff;stroke-width:1.8"><path d="M2 7.5 L8.5 5.2 L8.5 18.8 L2 20.5 Z" fill="rgba(88,199,255,0.38)"/><path d="M9.8 4.6 L22.2 4.6 L22.2 18.4 L9.8 18.4 Z" fill="rgba(88,199,255,0.52)"/><path d="M23.5 5.2 L30 7.5 L30 20.5 L23.5 18.8 Z" fill="rgba(88,199,255,0.38)"/></svg><span style="font:700 9px/1 sans-serif;color:#e4f7ff">2 · 30s</span>'
+    };
+    const CONTROLS=[
+      {id:"analog-joystick",label:"Analog",cls:"vkm-ghost",html:'<div class="vkm-stick"></div>',w:128,h:128,pos:{left:"18px",bottom:"14px"}},
+      {id:"tembak",label:"Tembak",cls:"vkm-btn vkm-round vkm-fire",html:`<span class="vkm-fire-knob">${SVG.fire}</span>`,w:92,h:92,pos:{right:"18px",bottom:"14px"}},
+      {id:"tembak-kiri",label:"Tembak Kiri",cls:"vkm-btn vkm-round vkm-fire-left",html:SVG.fire,w:52,h:52,pos:{left:"154px",bottom:"96px"}},
+      {id:"glowal",label:"Glowal",cls:"vkm-btn vkm-round vkm-gloowall",html:SVG.glowal,w:54,h:54,pos:{left:"22px",bottom:"198px"}},
+      {id:"bidik",label:"Bidik",cls:"vkm-btn vkm-round",html:SVG.aim,w:50,h:50,pos:{right:"122px",bottom:"20px"}},
+      {id:"lompat",label:"Lompat",cls:"vkm-btn vkm-round",html:SVG.jump,w:50,h:50,pos:{right:"30px",bottom:"242px"}},
+      {id:"jongkok",label:"Jongkok",cls:"vkm-btn vkm-round",html:SVG.crouch,w:50,h:50,pos:{right:"30px",bottom:"184px"}},
+      {id:"senjata-terakhir",label:"Senjata terakhir",cls:"vkm-btn vkm-round",html:SVG.swap,w:56,h:56,pos:{right:"26px",bottom:"116px"}},
+      {id:"reload",label:"Reload",cls:"vkm-btn vkm-round",html:SVG.reload,w:50,h:50,pos:{right:"126px",bottom:"84px"}},
+      {id:"aksi",label:"Aksi",cls:"vkm-btn vkm-round",html:SVG.action,w:50,h:50,pos:{right:"98px",bottom:"150px"}},
+      {id:"jalan-pelan",label:"Jalan pelan",cls:"vkm-btn vkm-round",html:SVG.walk,w:48,h:48,pos:{right:"184px",bottom:"32px"}},
+      {id:"dual",label:"Dual",cls:"vkm-btn vkm-round",html:SVG.dual,w:42,h:42,pos:{left:"34px",bottom:"150px"}},
+      {id:"laser",label:"Laser",cls:"vkm-btn vkm-round",html:SVG.laser,w:42,h:42,pos:{left:"86px",bottom:"150px"}},
+      {id:"buang-senjata",label:"Buang senjata",cls:"vkm-btn vkm-num",html:SVG.drop,w:34,h:34,pos:{left:"16px",top:"10px"}},
+      {id:"ganti-senjata",label:"Ganti senjata",cls:"vkm-btn vkm-num",html:SVG.weaponMenu,w:34,h:34,pos:{left:"56px",top:"10px"}},
+      {id:"menu-radio",label:"Menu radio",cls:"vkm-btn vkm-num",html:SVG.radioMenu,w:34,h:34,pos:{left:"96px",top:"10px"}},
+      {id:"menu",label:"Menu",cls:"vkm-btn vkm-num",html:SVG.menu,w:34,h:30,pos:{left:"calc(50% - 76px)",top:"10px"}},
+      {id:"scoreboard",label:"Scoreboard",cls:"vkm-btn vkm-num",html:SVG.score,w:34,h:30,pos:{left:"calc(50% - 36px)",top:"10px"}},
+      {id:"chat",label:"Chat",cls:"vkm-btn vkm-num",html:SVG.chat,w:34,h:30,pos:{left:"calc(50% + 4px)",top:"10px"}},
+      {id:"kamera-3pv-1pv",label:"Kamera 3PV/1PV",cls:"vkm-btn vkm-num",html:'<span style="font:700 10px/1 sans-serif">CAM</span>',w:34,h:30,pos:{left:"calc(50% + 44px)",top:"10px"}},
+      {id:"senjata-1",label:"Senjata 1",cls:"vkm-btn vkm-num",html:`${SVG.rifle}<span class="vkm-badge">1</span>`,w:32,h:32,pos:{right:"204px",top:"10px"}},
+      {id:"senjata-2",label:"Senjata 2",cls:"vkm-btn vkm-num",html:`${SVG.pistol}<span class="vkm-badge">2</span>`,w:32,h:32,pos:{right:"167px",top:"10px"}},
+      {id:"senjata-3",label:"Senjata 3",cls:"vkm-btn vkm-num",html:`${SVG.knife}<span class="vkm-badge">3</span>`,w:32,h:32,pos:{right:"130px",top:"10px"}},
+      {id:"senjata-4",label:"Senjata 4",cls:"vkm-btn vkm-num",html:`${SVG.grenade}<span class="vkm-badge">4</span>`,w:32,h:32,pos:{right:"93px",top:"10px"}},
+      {id:"senjata-5",label:"Senjata 5",cls:"vkm-btn vkm-num",html:`${SVG.special}<span class="vkm-badge">5</span>`,w:32,h:32,pos:{right:"56px",top:"10px"}},
+      {id:"senjata-6",label:"Senjata 6",cls:"vkm-btn vkm-num",html:'<span style="font-size:13px">6</span>',w:32,h:32,pos:{right:"19px",top:"10px"}}
+    ];
+    let layout={};
+    try{layout=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{}
+    const stage=document.getElementById("stage"),selName=document.getElementById("selName"),inpScale=document.getElementById("inpScale"),valScale=document.getElementById("valScale"),inpOp=document.getElementById("inpOp"),valOp=document.getElementById("valOp");
+    let selected=null;
+    function applyDefaultPos(el,def){
+      el.style.width=def.w+"px";el.style.height=def.h+"px";
+      el.style.left=def.pos.left||"auto";el.style.right=def.pos.right||"auto";
+      el.style.top=def.pos.top||"auto";el.style.bottom=def.pos.bottom||"auto";
+      el.style.transform="scale(1)";el.style.opacity="0.85";
+    }
+    function applyEl(el,def){
+      el.style.width=def.w+"px";el.style.height=def.h+"px";
+      const s=layout[def.id],maxW=Math.max(window.innerWidth,480),maxH=Math.max(window.innerHeight,260);
+      if(!s||typeof s.left!=="number"||typeof s.top!=="number"||s.left<0||s.top<0||s.left>maxW-20||s.top>maxH-20){applyDefaultPos(el,def);return}
+      const sc=Math.max(0.6,Math.min(1.5,Number(s.scale)||1)),op=Math.max(0.25,Math.min(1,Number(s.opacity)||0.85));
+      el.style.left=s.left+"px";el.style.top=s.top+"px";el.style.right="auto";el.style.bottom="auto";
+      el.style.transform=`scale(${sc})`;el.style.transformOrigin="center center";el.style.opacity=String(op);
+    }
+    function selectItem(el,def){
+      if(selected)selected.el.classList.remove("vkm-selected");
+      selected={el,def};el.classList.add("vkm-selected");selName.textContent=def.label;
+      const r=el.getBoundingClientRect(),cur=layout[def.id]||{left:Math.round(r.left),top:Math.round(r.top),scale:1,opacity:0.85};
+      const sc=Math.max(0.6,Math.min(1.5,Number(cur.scale)||1)),op=Math.max(0.25,Math.min(1,Number(cur.opacity)||0.85));
+      inpScale.value=String(sc);valScale.textContent=Math.round(sc*100)+"%";
+      inpOp.value=String(op);valOp.textContent=Math.round(op*100)+"%";
+    }
+    CONTROLS.forEach((def,idx)=>{
+      const el=document.createElement("div");el.className=def.cls;el.dataset.vkmId=def.id;el.innerHTML=def.html;
+      applyEl(el,def);stage.appendChild(el);
+      if(idx===0)setTimeout(()=>selectItem(el,def),60);
+      let drag=false,sx=0,sy=0,ol=0,ot=0;
+      el.addEventListener("pointerdown",e=>{e.preventDefault();selectItem(el,def);drag=true;const r=el.getBoundingClientRect();sx=e.clientX;sy=e.clientY;ol=r.left;ot=r.top;el.setPointerCapture(e.pointerId)});
+      el.addEventListener("pointermove",e=>{if(!drag)return;const nl=Math.max(0,Math.min(window.innerWidth-28,Math.round(ol+e.clientX-sx))),nt=Math.max(0,Math.min(window.innerHeight-28,Math.round(ot+e.clientY-sy))),p=layout[def.id]||{left:nl,top:nt,scale:1,opacity:0.85};layout[def.id]={...p,left:nl,top:nt};applyEl(el,def)});
+      el.addEventListener("pointerup",e=>{if(drag){drag=false;try{el.releasePointerCapture(e.pointerId)}catch{}}});
+    });
+    inpScale.addEventListener("input",()=>{if(!selected)return;const sc=Number(inpScale.value);valScale.textContent=Math.round(sc*100)+"%";const{el,def}=selected,r=el.getBoundingClientRect(),p=layout[def.id]||{left:Math.round(r.left),top:Math.round(r.top),scale:sc,opacity:0.85};layout[def.id]={...p,scale:sc};applyEl(el,def)});
+    inpOp.addEventListener("input",()=>{if(!selected)return;const op=Number(inpOp.value);valOp.textContent=Math.round(op*100)+"%";const{el,def}=selected,r=el.getBoundingClientRect(),p=layout[def.id]||{left:Math.round(r.left),top:Math.round(r.top),scale:1,opacity:op};layout[def.id]={...p,opacity:op};applyEl(el,def)});
+    document.getElementById("btnResetOne").addEventListener("click",()=>{if(!selected)return;delete layout[selected.def.id];applyEl(selected.el,selected.def);selectItem(selected.el,selected.def)});
+    document.getElementById("btnResetAll").addEventListener("click",()=>{layout={};localStorage.removeItem(KEY);stage.querySelectorAll("[data-vkm-id]").forEach((el,i)=>applyEl(el,CONTROLS[i]));if(selected)selectItem(selected.el,selected.def)});
+    document.getElementById("btnSave").addEventListener("click",()=>{localStorage.setItem(KEY,JSON.stringify(layout));const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)});
+    document.getElementById("btnBack").addEventListener("click",()=>{localStorage.setItem(KEY,JSON.stringify(layout));location.href="/"});
+    const fsGate=document.getElementById("pb-fs-gate"),gateTitle=document.getElementById("pb-gate-title"),gateDesc=document.getElementById("pb-gate-desc"),fsBtn=document.getElementById("pb-force-fs-btn");
+    function updateGateState(){
+      const isP=window.innerHeight>window.innerWidth,isFs=!!document.fullscreenElement;
+      if(isP){gateTitle.textContent="MIRINGKAN HP (LANDSCAPE)";gateDesc.textContent="Editor Custom HUD HP wajib menggunakan layar penuh mode Landscape.";fsGate.classList.remove("hidden")}
+      else if(!isFs){gateTitle.textContent="AKTIFKAN LAYAR PENUH (FULLSCREEN)";gateDesc.textContent="Ketuk tombol di bawah agar address bar Chrome tersembunyi & ukuran tombol akurat.";fsGate.classList.remove("hidden")}
+      else{fsGate.classList.add("hidden")}
+      stage.querySelectorAll("[data-vkm-id]").forEach((el,i)=>applyEl(el,CONTROLS[i]));
+    }
+    async function enterLandscapeFullscreen(){
+      try{const el=document.documentElement;if(!document.fullscreenElement&&el.requestFullscreen)await el.requestFullscreen();if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock("landscape")}catch(_){}
+      setTimeout(updateGateState,120);
+    }
+    fsBtn.addEventListener("click",enterLandscapeFullscreen);
+    document.addEventListener("fullscreenchange",updateGateState);
+    window.addEventListener("resize",updateGateState);
+    window.addEventListener("orientationchange",()=>setTimeout(updateGateState,150));
+    updateGateState();
+  </script>
+</body>
+</html>

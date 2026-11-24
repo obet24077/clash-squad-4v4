@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.vercel/
+public/assets
+public/assets/
+*.log
+.DS_Store

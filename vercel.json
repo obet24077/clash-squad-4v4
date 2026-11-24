@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/((?!assets/|custom-hud\\.html$).*)", "destination": "/index.html" }
+  ]
+}
